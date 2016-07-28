@@ -1,0 +1,7 @@
+-module(ps).
+
+-export([test/0]).
+
+fun test() ->
+    io:format("Hello world~n", []).
+
