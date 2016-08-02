@@ -7,4 +7,4 @@ build: check-rebar3
 	rebar3 release
 
 run:
-	_build/default/rel/ps/bin/ps console
+	_build/default/rel/rbc_pubsub_demo/bin/rbc_pubsub_demo console

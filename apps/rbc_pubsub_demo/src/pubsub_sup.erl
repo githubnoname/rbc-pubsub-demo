@@ -3,7 +3,7 @@
 %% @end
 %%%-------------------------------------------------------------------
 
--module(ps_sup).
+-module(pubsub_sup).
 
 -behaviour(supervisor).
 
@@ -29,8 +29,8 @@ start_link() ->
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
     {ok, { #{strategy => one_for_all}, 
-	   [#{id => ps,
-	      start => {ps, start_link, []}}]} }.
+	   [#{id => pubsub,
+	      start => {pubsub, start_link, []}}]} }.
 
 %%====================================================================
 %% Internal functions

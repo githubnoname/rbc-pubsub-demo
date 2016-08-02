@@ -1,4 +1,4 @@
--module(ps).
+-module(pubsub).
 -behaviour(gen_server).
 
 -export([start_link/0]).

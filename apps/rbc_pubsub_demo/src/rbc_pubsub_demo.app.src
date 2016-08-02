@@ -1,11 +1,12 @@
-{application, ps,
- [{description, "An OTP application"},
+{application, rbc_pubsub_demo,
+ [{description, "Demo pubsub/chat for RBC"},
   {vsn, "0.1.0"},
   {registered, []},
-  {mod, { ps_app, []}},
+  {mod, {rbc_pubsub_demo_app, []}},
   {applications,
    [kernel,
-    stdlib
+    stdlib,
+    cowboy
    ]},
   {env,[]},
   {modules, []},
