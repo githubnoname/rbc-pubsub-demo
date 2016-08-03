@@ -1,40 +1,69 @@
 -module(pubsub).
 -behaviour(gen_server).
 
+%%
+%% Demo for RBC Money team
+%% publish-subscribe backend for chat
+%% Message dispatching is by channels. No history for messages.
+%%
+
 -export([start_link/0]).
 
 % gen_server callbacks
--export([init/1, handle_call/3, handle_info/2]).
+-export([init/1, handle_call/3, handle_info/2, terminate/2, code_change/3, handle_cast/2]).
 
-% module api
--export([publish/2, subscribe/2, unsubscribe/2, create/1, list_channels/0]).
+% pubsub API
+-export([publish/2, subscribe/2, unsubscribe/2, create_channel/1, list_channels/0]).
 
 -record(state, {channels=maps:new()}).
 -record(channel, {id, subscribers}).
 -record(subscriber, {pid, ref}).
 
+-type channelid() :: atom().
+-type bad_channel() :: {error, channel_doesnt_exist, [channelid()]}.
+-type already_subscribed() :: {error, pid_is_already_subscribed, [pid()]}.
+-type is_not_subscribed() :: {error, pid_is_not_subscrubed, [pid()]}.
+-type channel_exists() :: {error, channel_already_exists, [channelid()]}.
+
 -include("pubsub.hrl").
+
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
+
 init(_Args) ->
     {ok, #state{channels=maps:new()}}.
 
+
+% pubsub API
+
+-spec publish(pubsub_message(), channelid()) -> ok | bad_channel().
 publish(Message, ChannelId) ->
     gen_server:call(?MODULE, {publish, Message, ChannelId}).
 
+
+-spec subscribe(pid(), channelid()) -> ok | bad_channel() | already_subscribed().
 subscribe(Pid, ChannelId) ->
     gen_server:call(?MODULE, {subscribe, Pid, ChannelId}).
 
+
+-spec unsubscribe(pid(), channelid()) -> ok | bad_channel() | is_not_subscribed().
 unsubscribe(Pid, ChannelId) ->
     gen_server:call(?MODULE, {unsubscribe, Pid, ChannelId}).
 
-create(Channel) ->
-    gen_server:call(?MODULE, {create, Channel}).
 
+-spec create_channel(channelid()) -> ok | channel_exists().
+create_channel(ChannelId) ->
+    gen_server:call(?MODULE, {create, ChannelId}).
+
+
+-spec list_channels() -> [channelid()].
 list_channels() ->
     gen_server:call(?MODULE, list).
+
+
+% gen_server API
 
 handle_call({publish, Message, ChannelId}, _From, State) ->
     {Result, NewState} = publish_ll(State, ChannelId, Message),
@@ -51,6 +80,7 @@ handle_call({create, ChannelId}, _From, State) ->
 handle_call(list, _From, State) ->
     {reply, maps:keys(State#state.channels), State}.
 
+%% Remove down process from all subscriptions
 handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
     NewState = maps:fold(fun(ChannelId, _, S) -> 
                                  case unsubscribe_ll(S, ChannelId, Pid) of
@@ -60,6 +90,19 @@ handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
                          end, State, subscribed_channels(State#state.channels, Pid)),
     {noreply, NewState}.
 
+
+terminate(_Reason, _State) ->
+    ok.
+
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+
+handle_cast(_Msg, State) ->
+    {noreply, State}.
+
+
 % Internal functions
 
 find_channel(State, ChannelId) ->
@@ -68,7 +111,7 @@ find_channel(State, ChannelId) ->
 with_channel(State, ChannelId, Fun) ->
     case find_channel(State, ChannelId) of
         error ->
-            {{error, channel_doesnt_exists, [ChannelId]}, State};
+            {{error, channel_doesnt_exist, [ChannelId]}, State};
         {ok, Channel} ->
             Fun(Channel)
     end.
@@ -128,7 +171,7 @@ add_subscriber(Subscribers, Pid) ->
 remove_subscriber(Subscribers, Pid) ->
     case find_subscriber(Subscribers, Pid) of
         false ->
-            {error, pid_is_not_subscribed};
+            {error, pid_is_not_subscribed, [Pid]};
         #subscriber{ref=Ref} ->
             demonitor(Ref),
             {ok, lists:keydelete(Pid, 2, Subscribers)}

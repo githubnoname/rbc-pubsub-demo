@@ -85,6 +85,7 @@ function userName(){
 
 function setRoom(room){
     document.getElementById('current_room').innerHTML = room;
+    document.getElementById('chat').innerHTML = "";
 }
 
 

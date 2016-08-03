@@ -1,1 +1,2 @@
 -record(pubsub_message, {sender, data, date}).
+-type pubsub_message() :: #pubsub_message{}.

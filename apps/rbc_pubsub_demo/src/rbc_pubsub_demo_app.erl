@@ -22,8 +22,8 @@ start(_StartType, _StartArgs) ->
     Port = application:get_env(rbc_pubsub_demo, cowboy_port, 8080),
     start_cowboy(Workers, Port),
     Result = pubsub_sup:start_link(),
-    pubsub:create(channel1),
-    pubsub:create(channel42),
+    pubsub:create_channel(channel1),
+    pubsub:create_channel(channel42),
     Result.
 
 %%--------------------------------------------------------------------
@@ -45,6 +45,7 @@ start_cowboy(Workers, Port) ->
     {ok, _} = cowboy:start_http(http, Workers, [{port, Port}],
                                [{env, [{dispatch, Dispatch}]}]).
 
+
 start_flood() ->
     io:format("START~n"),
     Pid = spawn(fun() -> 
@@ -58,6 +59,7 @@ start_flood() ->
     link(Pid),
     {ok, Pid}.
 
+
 flood(List, []) ->
     flood(List, List);
 flood(List, [H|T]) ->
@@ -65,5 +67,5 @@ flood(List, [H|T]) ->
     lists:foreach(fun(C) ->
         pubsub:publish(#pubsub_message{sender = 'Flooder', data = H}, C)
     end, Channels),
-    timer:sleep(1500),
+    timer:sleep(15000),
     flood(List, T).
