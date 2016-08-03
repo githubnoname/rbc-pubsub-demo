@@ -7,6 +7,8 @@ Simple publish-subscribe backend with message filtering by channels. Frontend is
 
 Backend contains stupid flood bot to spam all channels.
 
+[apps/rbc_pubsub_demo/test/pubsub_tests.erl](/apps/rbc_pubsub_demo/test/pubsub_tests.erl) is probably a good place to start survey the code.
+
 Requirements
 ------------
 
