@@ -19,7 +19,11 @@
 -record(channel, {id, subscribers}).
 -record(subscriber, {pid, ref}).
 
+-type state() :: #state{}.
+-type channel() :: #channel{}.
+-type subscriber() :: #subscriber{}.
 -type channelid() :: atom().
+
 -type bad_channel() :: {error, channel_doesnt_exist, [channelid()]}.
 -type already_subscribed() :: {error, pid_is_already_subscribed, [pid()]}.
 -type is_not_subscribed() :: {error, pid_is_not_subscrubed, [pid()]}.
@@ -105,9 +109,12 @@ handle_cast(_Msg, State) ->
 
 % Internal functions
 
+-spec find_channel(state(), channelid()) -> {ok, channel()} | error.
 find_channel(State, ChannelId) ->
     maps:find(ChannelId, State#state.channels).
 
+
+-spec with_channel(state(), channelid(), fun((channel()) -> any())) -> any().
 with_channel(State, ChannelId, Fun) ->
     case find_channel(State, ChannelId) of
         error ->
@@ -116,6 +123,8 @@ with_channel(State, ChannelId, Fun) ->
             Fun(Channel)
     end.
 
+
+-spec publish_ll(state(), channelid(), pubsub_message()) -> {ok, state()} | {bad_channel(), state()}.
 publish_ll(State, ChannelId, Message_) ->
     Message = Message_#pubsub_message{date=erlang:localtime()},
     with_channel(State, ChannelId, fun(Ch) ->
@@ -125,6 +134,8 @@ publish_ll(State, ChannelId, Message_) ->
         {ok, State}
     end).
 
+
+-spec subscribe_ll(state(), channelid(), pid()) -> {ok, state()} | {bad_channel() | already_subscribed(), state()}.
 subscribe_ll(State, ChannelId, Pid) ->
     with_channel(State, ChannelId, fun(Ch) ->
         case add_subscriber(Ch#channel.subscribers, Pid) of
@@ -136,6 +147,9 @@ subscribe_ll(State, ChannelId, Pid) ->
         end
     end).
 
+
+-spec unsubscribe_ll(state(), channel() | channelid(), pid()) ->
+                            {ok, state()} | {bad_channel() | is_not_subscribed(), state()}.
 unsubscribe_ll(State, Channel, Pid) when is_record(Channel, channel) ->
     case remove_subscriber(Channel#channel.subscribers, Pid) of
         {ok, Subscribers} ->
@@ -149,6 +163,8 @@ unsubscribe_ll(State, ChannelId, Pid) ->
         unsubscribe_ll(State, Ch, Pid)
     end).
 
+
+-spec create_ll(state(), channelid()) -> {ok, state()} | {channel_exists(), state}.
 create_ll(State, ChannelId) ->
     case find_channel(State, ChannelId) of
         error ->
@@ -159,6 +175,8 @@ create_ll(State, ChannelId) ->
             {{error, channel_already_exists, [ChannelId]}, State}
     end.
 
+
+-spec add_subscriber([subscriber()], pid()) -> {ok, [subscriber()]} | already_subscribed().
 add_subscriber(Subscribers, Pid) ->
     case find_subscriber(Subscribers, Pid) of
         false ->
@@ -168,6 +186,8 @@ add_subscriber(Subscribers, Pid) ->
             {error, pid_is_already_subscribed, [Pid]}
     end.
 
+
+-spec remove_subscriber([subscriber()], pid()) -> is_not_subscribed() | {ok, [subscriber()]}.
 remove_subscriber(Subscribers, Pid) ->
     case find_subscriber(Subscribers, Pid) of
         false ->
@@ -177,9 +197,13 @@ remove_subscriber(Subscribers, Pid) ->
             {ok, lists:keydelete(Pid, 2, Subscribers)}
     end.
 
+
+-spec find_subscriber([subscriber()], pid()) -> subscriber() | false.
 find_subscriber(Subscribers, Pid) ->
     lists:keyfind(Pid, 2, Subscribers).
 
+
+-spec subscribed_channels(#{channelid() => channel()}, pid()) -> #{channelid() => channel()}.
 subscribed_channels(Channels, Pid) ->
     maps:filter(fun(_, C) ->
         case find_subscriber(C#channel.subscribers, Pid) of
