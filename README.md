@@ -37,7 +37,7 @@ Access web UI
 If you run backend on localhost, open http://127.0.0.1:8080 in your favorite browser. Safari 9.1.2, Chrome 51, and Firefox 45 were tested.
 
 
-Web ui manual
+Web UI manual
 -------------
 
 1. To change channel, select interested channel from list and click on `Change it` button.

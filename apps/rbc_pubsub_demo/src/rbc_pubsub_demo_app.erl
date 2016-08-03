@@ -67,5 +67,5 @@ flood(List, [H|T]) ->
     lists:foreach(fun(C) ->
         pubsub:publish(#pubsub_message{sender = 'Flooder', data = H}, C)
     end, Channels),
-    timer:sleep(15000),
+    timer:sleep(15000 + rand:uniform(15000)),
     flood(List, T).
