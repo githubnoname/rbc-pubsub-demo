@@ -7,14 +7,15 @@
 -export([init/1, handle_call/3, handle_info/2]).
 
 % module api
--export([publish/3, subscribe/2, unsubscribe/2, create/1, list_channels/0]).
+-export([publish/2, subscribe/2, unsubscribe/2, create/1, list_channels/0]).
 
 -export([printer/2]).
 
 -record(state, {channels=maps:new()}).
 -record(channel, {id, subscribers}).
 -record(subscriber, {pid, ref}).
--record(message, {sender, data}).
+
+-include("pubsub.hrl").
 
 printer(Prefix, Repeats) ->
     spawn(fun () ->
@@ -32,8 +33,8 @@ start_link() ->
 init(_Args) ->
     {ok, #state{channels=maps:new()}}.
 
-publish(Sender, Message, ChannelId) ->
-    gen_server:call(?MODULE, {publish, #message{sender=Sender, data=Message}, ChannelId}).
+publish(Message, ChannelId) ->
+    gen_server:call(?MODULE, {publish, Message, ChannelId}).
 
 subscribe(Pid, ChannelId) ->
     gen_server:call(?MODULE, {subscribe, Pid, ChannelId}).
@@ -87,7 +88,8 @@ with_channel(State, ChannelId, Fun) ->
             Fun(Channel)
     end.
 
-publish_ll(State, ChannelId, Message) ->
+publish_ll(State, ChannelId, Message_) ->
+    Message = Message_#pubsub_message{date=erlang:localtime()},
     with_channel(State, ChannelId, fun(Ch) ->
         io:format("Notice ~p subscribers...~n", [length(Ch#channel.subscribers)]),
         lists:foreach(fun(#subscriber{pid=Pid}) ->

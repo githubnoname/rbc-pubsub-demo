@@ -1,0 +1,1 @@
+-record(pubsub_message, {sender, data, date}).

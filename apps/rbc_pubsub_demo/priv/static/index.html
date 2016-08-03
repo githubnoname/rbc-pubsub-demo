@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chat demo for RBC</title>
+  <script src="scripts/main.js"></script>
+  <style>
+    html, body{
+    height: 100%;
+    width: 100%;
+    }
+    #chat,#dbg{
+    height: 50%;
+    width: 40%;
+    }
+    #message{
+    width: 40%;
+    }
+  </style>
+</head>
+<body onload="connect()">
+Current chat room is <b><span id="current_room">NIL</span></b>.
+<select disabled="true" id="room">
+  <option>Loading...</option>
+</select>
+<input type="button" value="Change it" onclick="changeRoom()" /> or
+<input type="button" value="Update room list" onclick="loadRooms()"> <br/>
+Your name is <input type="text" value="Noname" id="username" /> <br/>
+<textarea id="chat"></textarea>
+<textarea id="dbg">Debug window
+</textarea>
+<form onsubmit="return sendMessage()">
+  <input type="text" id="message" placeholder="Message to send" />
+  <input type="submit" value="Send!" />
+</form>
+</body>
+</html>
