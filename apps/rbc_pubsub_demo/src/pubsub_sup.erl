@@ -30,7 +30,10 @@ start_link() ->
 init([]) ->
     {ok, { #{strategy => one_for_all}, 
 	   [#{id => pubsub,
-	      start => {pubsub, start_link, []}}]} }.
+	      start => {pubsub, start_link, []}},
+            #{id => pubsub_flood,
+              start => {rbc_pubsub_demo_app, start_flood, []}}
+           ]} }.
 
 %%====================================================================
 %% Internal functions

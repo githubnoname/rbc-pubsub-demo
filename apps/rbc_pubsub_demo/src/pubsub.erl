@@ -9,23 +9,11 @@
 % module api
 -export([publish/2, subscribe/2, unsubscribe/2, create/1, list_channels/0]).
 
--export([printer/2]).
-
 -record(state, {channels=maps:new()}).
 -record(channel, {id, subscribers}).
 -record(subscriber, {pid, ref}).
 
 -include("pubsub.hrl").
-
-printer(Prefix, Repeats) ->
-    spawn(fun () ->
-        lists:foreach(fun(N) ->
-            receive
-                Msg ->
-                    io:format("(~p) ~p: ~p~n", [N, Prefix, Msg])
-            end
-        end, lists:seq(1, Repeats))
-    end).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
@@ -70,10 +58,7 @@ handle_info({'DOWN', _Ref, process, Pid, _Reason}, State) ->
                                      _ -> S
                                  end
                          end, State, subscribed_channels(State#state.channels, Pid)),
-    {noreply, NewState};
-handle_info(Info, State) ->
-    io:format("INFO: ~p~n", [Info]),
-    {noreply, State}.
+    {noreply, NewState}.
 
 % Internal functions
 
@@ -91,7 +76,6 @@ with_channel(State, ChannelId, Fun) ->
 publish_ll(State, ChannelId, Message_) ->
     Message = Message_#pubsub_message{date=erlang:localtime()},
     with_channel(State, ChannelId, fun(Ch) ->
-        io:format("Notice ~p subscribers...~n", [length(Ch#channel.subscribers)]),
         lists:foreach(fun(#subscriber{pid=Pid}) ->
             Pid ! Message 
         end, Ch#channel.subscribers),
@@ -104,7 +88,6 @@ subscribe_ll(State, ChannelId, Pid) ->
             {ok, Subscribers} ->
                 Channel = Ch#channel{subscribers=Subscribers},
                 NewState = State#state{channels=maps:put(ChannelId, Channel, State#state.channels)},
-                io:format("CHANNELS = ~p~n", [subscribed_channels(NewState#state.channels, Pid)]),
                 {ok, NewState};
             Error -> {Error, State}
         end

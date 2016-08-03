@@ -13,7 +13,7 @@ function connect(){
     }
     ws.onmessage = function(e){
         addDbg(e.data);
-        msg = JSON.parse(e.data);
+        var msg = JSON.parse(e.data);
         switch(msg.action) {
         case "list_channels":
             updateRooms(msg.channels);
@@ -21,6 +21,10 @@ function connect(){
         case "subscribe":
             if(msg.result == "ok")
                 setRoom(msg.channel);
+            break;
+        case "message":
+            addMsg(msg.message.date, msg.message.sender, msg.message.data);
+            break;
         }
     }
     var closeFun = function(){
@@ -53,12 +57,17 @@ function updateRooms(channels){
         subscribe(channels[0]);
 }
 
-function addMsg(from, message){
-    document.getElementById('chat').value += from + ": " + message + "\n";
+function addMsg(date, sender, message){
+    var chat = document.getElementById('chat');
+    chat.innerHTML += '<span class="date">' + date + '</span>' +
+        ' <span class="sender">' + sender + '</span>: ' + message + '<br/>';
+    chat.scrollTop = chat.scrollHeight;
 }
 
 function addDbg(message){
-    document.getElementById('dbg').value += message + "\n";
+    var dbg = document.getElementById('dbg');
+    dbg.innerHTML += message + "<br/>";
+    dbg.scrollTop = dbg.scrollHeight;
 }
 
 function selectedRoom(){
@@ -99,7 +108,7 @@ function sendMessage(){
     var message = document.getElementById('message');
     var room = currentRoom();
     var name = userName();
-    if(room != "NIL"){
+    if(room != "NIL" && message.value != ""){
         publish(room, name, message.value);
         message.value="";
     }

@@ -7,8 +7,11 @@
 
 -behaviour(application).
 
+-include("pubsub.hrl").
+
 %% Application callbacks
 -export([start/2, stop/1]).
+-export([start_flood/0]).
 
 %%====================================================================
 %% API
@@ -18,7 +21,10 @@ start(_StartType, _StartArgs) ->
     Workers = application:get_env(rbc_pubsub_demo, cowboy_workers, 10),
     Port = application:get_env(rbc_pubsub_demo, cowboy_port, 8080),
     start_cowboy(Workers, Port),
-    pubsub_sup:start_link().
+    Result = pubsub_sup:start_link(),
+    pubsub:create(channel1),
+    pubsub:create(channel42),
+    Result.
 
 %%--------------------------------------------------------------------
 stop(_State) ->
@@ -38,3 +44,26 @@ start_cowboy(Workers, Port) ->
                  ]),
     {ok, _} = cowboy:start_http(http, Workers, [{port, Port}],
                                [{env, [{dispatch, Dispatch}]}]).
+
+start_flood() ->
+    io:format("START~n"),
+    Pid = spawn(fun() -> 
+        flood([
+            "Hi, there!",
+            "How are you?",
+            "What's up?",
+            "How you doin'?"
+          ], [])
+    end),
+    link(Pid),
+    {ok, Pid}.
+
+flood(List, []) ->
+    flood(List, List);
+flood(List, [H|T]) ->
+    Channels = pubsub:list_channels(),
+    lists:foreach(fun(C) ->
+        pubsub:publish(#pubsub_message{sender = 'Flooder', data = H}, C)
+    end, Channels),
+    timer:sleep(1500),
+    flood(List, T).

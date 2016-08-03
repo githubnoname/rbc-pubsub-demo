@@ -10,7 +10,6 @@ init({tcp, http}, _Req, _Opts) ->
     {upgrade, protocol, cowboy_websocket}.
 
 websocket_init(_Transport, Req, _Opts) ->
-    io:format("Connected!~n"),
     {ok, Req, undefined_state}.
 
 websocket_handle({text, Msg}, Req, State) ->
@@ -26,8 +25,8 @@ websocket_info(#pubsub_message{sender=Sender, data=Data, date=Date}, Req, State)
     DateStr = io_lib:format("~2..0w/~2..0w/~w ~2..0w:~2..0w:~2..0w", [Month, Day, Year, Hour, Min, Sec]),
     Response = #{<<"action">> => <<"message">>,
                  <<"message">> => #{
-                   <<"sender">> => Sender,
-                   <<"data">> => Data,
+                   <<"sender">> => to_binary(Sender),
+                   <<"data">> => to_binary(Data),
                    <<"date">> => to_binary(DateStr)
                   }
                 },
@@ -53,10 +52,7 @@ process_data(#{<<"action">> := <<"publish">>,
                                sender = Sender,
                                data = Message
                               }, to_atom(Channel)),
-    result(Data, Result);
-process_data(Data) ->
-    io:format("WRONG ~p~n", [Data]),
-    result(Data, {error, wrong_request, []}).
+    result(Data, Result).
 
 result(Data, Result) ->
     Data#{<<"result">> => to_map(Result)}.
@@ -69,7 +65,9 @@ to_map({error, Reason, _Extra}) when is_atom(Reason) ->
 to_binary(X) when is_atom(X) ->
     atom_to_binary(X, utf8);
 to_binary(X) when is_list(X) ->
-    list_to_binary(X).
+    list_to_binary(X);
+to_binary(X) when is_binary(X) ->
+    X.
 
 to_atom(X) when is_binary(X) ->
     binary_to_atom(X, utf8).

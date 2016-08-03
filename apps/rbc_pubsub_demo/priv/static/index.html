@@ -11,9 +11,22 @@
     #chat,#dbg{
     height: 50%;
     width: 40%;
+    border: 1px solid black;
+    float: left;
+    font-family: monospace;
+    overflow: auto;
+    }
+    #dbg{
+    margin-left: 10px;
     }
     #message{
     width: 40%;
+    }
+    .date{
+    color: #aaaaaa;
+    }
+    .sender{
+    color: #aaaaff;
     }
   </style>
 </head>
@@ -25,8 +38,8 @@ Current chat room is <b><span id="current_room">NIL</span></b>.
 <input type="button" value="Change it" onclick="changeRoom()" /> or
 <input type="button" value="Update room list" onclick="loadRooms()"> <br/>
 Your name is <input type="text" value="Noname" id="username" /> <br/>
-<textarea id="chat"></textarea>
-<textarea id="dbg">Debug window
+<div id="chat"></div>
+<div id="dbg"></div>
 </textarea>
 <form onsubmit="return sendMessage()">
   <input type="text" id="message" placeholder="Message to send" />
