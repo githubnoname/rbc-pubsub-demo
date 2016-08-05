@@ -14,7 +14,7 @@ channels_test() ->
     %% create second channel
     ?assertMatch(Pid when is_pid(Pid), pubsub:create_channel(channel2)),
     %% check channels
-    ?assertEqual([channel1, channel2], pubsub:list_channels()),
+    ?assertEqual(sets:from_list([channel1, channel2]), sets:from_list(pubsub:list_channels())),
     %% stop pubsub
     stop_pubsub().
     

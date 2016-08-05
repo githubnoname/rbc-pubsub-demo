@@ -9,7 +9,7 @@
 % pubsub API
 -export([publish/2, subscribe/2, unsubscribe/2, create_channel/1, list_channels/0]).
 
--record(state, {channels=maps:new() :: #{atom() => channel()}}).
+-record(state, {channels :: ets:tab()}).
 -record(channel, {id :: atom(), pid :: pid()}).
 
 -type state() :: #state{}.
@@ -28,7 +28,7 @@ start_link() ->
 
 init(_Args) ->
     io:format("pubsub:init ~p~n", [self()]),
-    {ok, #state{channels=maps:new()}}.
+    {ok, #state{channels=ets:new(channels, [set, private, {keypos, 2}])}}.
 
 
 % pubsub API
@@ -73,14 +73,15 @@ handle_call({create, ChannelId}, _From, State) ->
     {Result, NewState} = create_ll(State, ChannelId),
     {reply, Result, NewState};
 handle_call(list, _From, State) ->
-    {reply, maps:keys(State#state.channels), State}.
+    {reply, utils:ets_list(State#state.channels), State}.
 
 
 handle_info(_Msg, State) ->
     {noreply, State}.
 
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
+    ets:delete(State#state.channels),
     ok.
 
 
@@ -96,7 +97,10 @@ handle_cast(_Msg, State) ->
 
 -spec find_channel(state(), channelid()) -> {ok, channel()} | error.
 find_channel(State, ChannelId) ->
-    maps:find(ChannelId, State#state.channels).
+    case ets:lookup(State#state.channels, ChannelId) of
+        [] -> error;
+        [C] -> {ok, C}
+    end.
 
 
 -spec with_channel(state(), channelid(), fun((channel()) -> any())) -> any().
@@ -138,8 +142,8 @@ create_ll(State, ChannelId) ->
             case channels_sup:create_channel(ChannelId) of
                 {ok, Pid} ->
                     Channel = #channel{id=ChannelId, pid=Pid},
-                    NewState = State#state{channels=maps:put(ChannelId, Channel, State#state.channels)},
-                    {Pid, NewState};
+                    ets:insert(State#state.channels, Channel),
+                    {Pid, State};
                 {error, Reason} ->
                     {{error, Reason, [ChannelId]}, State}
             end;
