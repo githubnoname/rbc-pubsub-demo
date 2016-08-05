@@ -1,5 +1,7 @@
 .PHONY: build run check-rebar3 check clean
 
+all: build
+
 check-%:
 	@command -v $* &>/dev/null || (echo You have to install $*; exit 1)
 

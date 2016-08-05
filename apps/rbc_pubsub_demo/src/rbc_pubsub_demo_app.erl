@@ -24,6 +24,8 @@ start(_StartType, _StartArgs) ->
     Result = pubsub_sup:start_link(),
     pubsub:create_channel(channel1),
     pubsub:create_channel(channel42),
+    {ok, _} = supervisor:start_child(pubsub_sup, #{id => pubsub_flood,
+                                                   start => {rbc_pubsub_demo_app, start_flood, []}}),
     Result.
 
 %%--------------------------------------------------------------------

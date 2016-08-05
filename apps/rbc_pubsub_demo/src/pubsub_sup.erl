@@ -14,6 +14,7 @@
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+-define(CHILD(M,T), #{id => M, start => {M, start_link, []}, type => T}).
 
 %%====================================================================
 %% API functions
@@ -28,11 +29,9 @@ start_link() ->
 
 %% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
 init([]) ->
-    {ok, { #{strategy => one_for_all}, 
-	   [#{id => pubsub,
-	      start => {pubsub, start_link, []}},
-            #{id => pubsub_flood,
-              start => {rbc_pubsub_demo_app, start_flood, []}}
+    {ok, { #{strategy => one_for_one}, 
+	   [?CHILD(channels_sup, supervisor),
+            ?CHILD(pubsub, worker)
            ]} }.
 
 %%====================================================================
